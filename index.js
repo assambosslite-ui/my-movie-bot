@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 
 // ==========================================
-// 1. RENDER SERVER SETUP (Bot ko zinda rakhne ke liye)
+// 1. RENDER SERVER SETUP
 // ==========================================
 const app = express();
 app.get('/', (req, res) => res.send('Xumon ka Movie Bot Zinda Hai! 🚀'));
@@ -11,7 +11,6 @@ app.listen(process.env.PORT || 3000, () => console.log('Server Start Ho Gaya!'))
 
 // ==========================================
 // 2. MONGODB DATABASE CONNECTION
-// ⚠️ DHYAN DEIN: Agar tumne DB mein password kuch aur rakha hai, toh 'xumon12345' ki jagah wo likhna!
 // ==========================================
 const mongoURI = "mongodb+srv://xumon:xumon12345@cluster0.ryyfo6j.mongodb.net/moviebot?appName=Cluster0";
 
@@ -20,7 +19,7 @@ mongoose.connect(mongoURI)
   .catch(err => console.log("❌ Database Error:", err));
 
 // ==========================================
-// 3. DATABASE SCHEMAS (Database ka structure)
+// 3. DATABASE SCHEMAS
 // ==========================================
 const movieSchema = new mongoose.Schema({ 
     name: String, image: String, watch1: String, watch2: String, dl1: String, dl2: String
@@ -33,7 +32,8 @@ const User = mongoose.model('User', userSchema);
 // ==========================================
 // 4. TELEGRAM BOT SETUP & SETTINGS
 // ==========================================
-const token = '8912995250:AAHlI1Ridq5IkResaozLvKqXN-37bDudtVQ'; 
+// 👇 YAHAN TUMHARA NAYA TOKEN SET HAI 👇
+const token = '8912995250:AAGRTR7OaNvJzjpxe7AKyIE2kQsi3zwQeG0'; 
 const bot = new TelegramBot(token, {polling: true});
 
 // ⚠️ ADMIN SETTINGS ⚠️
@@ -43,7 +43,7 @@ const CHANNEL_LINK = 'https://t.me/moviiehub_4k';
 const SHRINKME_API_KEY = "11b964d6d724ae6b6f18894167e9b9a5d94a8b08";
 
 // ==========================================
-// 5. HELPER FUNCTIONS (URL Shortener & F-Sub)
+// 5. HELPER FUNCTIONS
 // ==========================================
 async function shortenUrl(longUrl) {
     if (!longUrl || longUrl.trim() === "na") return "na"; 
@@ -82,8 +82,7 @@ bot.onText(/\/start/, async (msg) => {
 });
 
 // ==========================================
-// 7. COMMAND: /add (Sirf Admin ke liye - Nayi movie daalne ke liye)
-// Format: /add Movie Name | Image URL | Watch 1 | Watch 2 | DL 1 | DL 2
+// 7. COMMAND: /add
 // ==========================================
 bot.onText(/\/add (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -111,8 +110,7 @@ bot.onText(/\/add (.+)/, async (msg, match) => {
 });
 
 // ==========================================
-// 8. COMMAND: /update (Sirf Admin ke liye - Purani movie ke links badalne ke liye)
-// Format: /update Movie Name | Watch 1 | Watch 2 | DL 1 | DL 2
+// 8. COMMAND: /update 
 // ==========================================
 bot.onText(/\/update (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -149,7 +147,7 @@ bot.onText(/\/update (.+)/, async (msg, match) => {
 });
 
 // ==========================================
-// 9. COMMAND: /broadcast (Sirf Admin ke liye - Sabko message bhejne ke liye)
+// 9. COMMAND: /broadcast 
 // ==========================================
 bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
