@@ -7,8 +7,9 @@ const app = express();
 app.get('/', (req, res) => res.send('Xumon ka Movie Bot Zinda Hai! 🚀'));
 app.listen(process.env.PORT || 3000, () => console.log('Server Start Ho Gaya!'));
 
-// 2. MongoDB Database Connection
-const mongoURI = "mongodb+srv://xumon:Xumon123@cluster0.ryyfo6j.mongodb.net/moviebot?appName=Cluster0";
+// 2. MongoDB Database Connection 
+// ⚠️ DHYAN DEIN: Agar tumne DB mein password kuch aur rakha hai, toh 'xumon12345' ki jagah wo likhna!
+const mongoURI = "mongodb+srv://xumon:xumon12345@cluster0.ryyfo6j.mongodb.net/moviebot?appName=Cluster0";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("✅ Database Connect Ho Gaya!"))
@@ -23,11 +24,11 @@ const Movie = mongoose.model('Movie', movieSchema);
 const userSchema = new mongoose.Schema({ userId: Number });
 const User = mongoose.model('User', userSchema);
 
-// 4. Telegram Bot Setup
-const token = '8834909327:AAHEq4Ko3wz-YVJsSkmPSwzkyRE_-NBg8nY'; 
+// 4. Telegram Bot Setup (NAYA TOKEN YAHAN HAI)
+const token = '8912995250:AAHlI1Ridq5IkResaozLvKqXN-37bDudtVQ'; 
 const bot = new TelegramBot(token, {polling: true});
 
-// ⚠️ ADMIN SETTINGS (Updated) ⚠️
+// ⚠️ ADMIN SETTINGS ⚠️
 const ADMIN_ID = 8564724671; 
 const CHANNEL_USERNAME = '@moviiehub_4k'; 
 const CHANNEL_LINK = 'https://t.me/moviiehub_4k'; 
