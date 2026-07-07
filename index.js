@@ -33,7 +33,7 @@ const User = mongoose.model('User', userSchema);
 // ==========================================
 // 4. TELEGRAM BOT SETUP & ADMIN POWERS
 // ==========================================
-const token = '8912995250:AAGRTR7OaNvJzjpxe7AKyIE2kQsi3zwQeG0'; 
+const token = '8912995250:AAHp4PBi_I0yuNLJpEPU4SpWaFNqzEKTcQI'; 
 const bot = new TelegramBot(token, {polling: true});
 
 const ADMIN_ID = 8564724671; 
