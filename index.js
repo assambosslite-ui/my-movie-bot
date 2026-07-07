@@ -11,6 +11,7 @@ app.listen(process.env.PORT || 3000, () => console.log('Server Start Ho Gaya!'))
 
 // ==========================================
 // 2. MONGODB DATABASE CONNECTION
+// ⚠️ Dhyan rakhna: Apna exact DB password yahan daalna!
 // ==========================================
 const mongoURI = "mongodb+srv://xumon:xumon12345@cluster0.ryyfo6j.mongodb.net/moviebot?appName=Cluster0";
 
@@ -30,20 +31,18 @@ const userSchema = new mongoose.Schema({ userId: Number });
 const User = mongoose.model('User', userSchema);
 
 // ==========================================
-// 4. TELEGRAM BOT SETUP & SETTINGS
+// 4. TELEGRAM BOT SETUP & ADMIN POWERS
 // ==========================================
-// 👇 YAHAN TUMHARA NAYA TOKEN SET HAI 👇
 const token = '8912995250:AAGRTR7OaNvJzjpxe7AKyIE2kQsi3zwQeG0'; 
 const bot = new TelegramBot(token, {polling: true});
 
-// ⚠️ ADMIN SETTINGS ⚠️
 const ADMIN_ID = 8564724671; 
 const CHANNEL_USERNAME = '@moviiehub_4k'; 
 const CHANNEL_LINK = 'https://t.me/moviiehub_4k'; 
 const SHRINKME_API_KEY = "11b964d6d724ae6b6f18894167e9b9a5d94a8b08";
 
 // ==========================================
-// 5. HELPER FUNCTIONS
+// 5. HELPER FUNCTIONS (URL Shortener & F-Sub)
 // ==========================================
 async function shortenUrl(longUrl) {
     if (!longUrl || longUrl.trim() === "na") return "na"; 
@@ -58,14 +57,17 @@ async function shortenUrl(longUrl) {
 }
 
 async function checkFSub(chatId) {
-    if (CHANNEL_USERNAME === '@TumharaChannelUsername') return true; 
+    // Admin ko channel check se free kar diya hai
+    if (chatId === ADMIN_ID) return true; 
+
     try {
         const member = await bot.getChatMember(CHANNEL_USERNAME, chatId);
         if (member.status === 'left' || member.status === 'kicked') return false;
         return true;
     } catch (error) {
+        // Agar bot channel mein admin nahi hai, toh false return karega
         console.log("F-Sub Error (Bot Channel me Admin nahi hai!):", error.message);
-        return true; 
+        return false; 
     }
 }
 
@@ -82,19 +84,18 @@ bot.onText(/\/start/, async (msg) => {
 });
 
 // ==========================================
-// 7. COMMAND: /add
+// 7. COMMAND: /add (Nayi Movie Daalne Ke Liye)
 // ==========================================
 bot.onText(/\/add (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
-    
-    if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, "❌ Tum admin nahi ho!");
+    if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, "❌ Tumhare paas Admin Power nahi hai!");
 
     const input = match[1].split('|');
     if (input.length < 6) return bot.sendMessage(chatId, "❌ Galat format!\n`/add Movie Name | Image URL | Watch 1 | Watch 2 | DL 1 | DL 2`", {parse_mode: "Markdown"});
 
     const movieName = input[0].trim().toLowerCase();
     const imageLink = input[1].trim();
-    const processingMsg = await bot.sendMessage(chatId, "⏳ Charo links short ho rahe hain...");
+    const processingMsg = await bot.sendMessage(chatId, "⏳ Links short ho rahe hain...");
 
     const [w1, w2, d1, d2] = await Promise.all([
         shortenUrl(input[2]), shortenUrl(input[3]), shortenUrl(input[4]), shortenUrl(input[5])
@@ -110,44 +111,59 @@ bot.onText(/\/add (.+)/, async (msg, match) => {
 });
 
 // ==========================================
-// 8. COMMAND: /update 
+// 8. COMMAND: /update (Links badalne ke liye)
 // ==========================================
 bot.onText(/\/update (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
-    
     if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, "❌ Tum admin nahi ho!");
 
     const input = match[1].split('|');
     if (input.length < 5) return bot.sendMessage(chatId, "❌ Galat format!\n`/update Movie Name | Watch 1 | Watch 2 | DL 1 | DL 2`", {parse_mode: "Markdown"});
 
     const movieName = input[0].trim().toLowerCase();
-    const processingMsg = await bot.sendMessage(chatId, "⏳ Naye links short aur update ho rahe hain...");
+    const processingMsg = await bot.sendMessage(chatId, "⏳ Update ho raha hai...");
 
     try {
         const movie = await Movie.findOne({ name: movieName });
-        if (!movie) {
-            return bot.editMessageText("❌ Yeh movie database mein nahi mili! Pehle /add command use karo.", { chat_id: chatId, message_id: processingMsg.message_id });
-        }
+        if (!movie) return bot.editMessageText("❌ Movie nahi mili!", { chat_id: chatId, message_id: processingMsg.message_id });
 
         const [w1, w2, d1, d2] = await Promise.all([
             shortenUrl(input[1]), shortenUrl(input[2]), shortenUrl(input[3]), shortenUrl(input[4])
         ]);
 
-        movie.watch1 = w1;
-        movie.watch2 = w2;
-        movie.dl1 = d1;
-        movie.dl2 = d2;
+        movie.watch1 = w1; movie.watch2 = w2; movie.dl1 = d1; movie.dl2 = d2;
         await movie.save();
 
         bot.deleteMessage(chatId, processingMsg.message_id);
         bot.sendMessage(chatId, `✅ Movie Update Ho Gayi!\n🍿 *Naam:* ${movieName}`, {parse_mode: "Markdown"});
     } catch (error) {
-        bot.sendMessage(chatId, "❌ Error: Movie update nahi ho payi.");
+        bot.sendMessage(chatId, "❌ Error aayi hai.");
     }
 });
 
 // ==========================================
-// 9. COMMAND: /broadcast 
+// 9. COMMAND: /delete (MOVIE KO UDAANE KE LIYE)
+// ==========================================
+bot.onText(/\/delete (.+)/, async (msg, match) => {
+    const chatId = msg.chat.id;
+    if (chatId !== ADMIN_ID) return bot.sendMessage(chatId, "❌ Tum admin nahi ho!");
+
+    const movieName = match[1].trim().toLowerCase();
+
+    try {
+        const deletedMovie = await Movie.findOneAndDelete({ name: movieName });
+        if (deletedMovie) {
+            bot.sendMessage(chatId, `🗑️ *Khatam!* \n\n'${movieName}' ko database se hamesha ke liye delete kar diya gaya hai.`, {parse_mode: "Markdown"});
+        } else {
+            bot.sendMessage(chatId, `❌ Yeh movie toh database mein mili hi nahi. Spelling check karo!`);
+        }
+    } catch (error) {
+        bot.sendMessage(chatId, "❌ Delete karne mein error aayi.");
+    }
+});
+
+// ==========================================
+// 10. COMMAND: /broadcast
 // ==========================================
 bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -158,33 +174,31 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
     let count = 0;
 
     bot.sendMessage(chatId, "⏳ Broadcast shuru ho gaya hai...");
-
     for (let u of users) {
         try {
             await bot.sendMessage(u.userId, `📢 *Admin Update:*\n\n${broadcastMsg}`, {parse_mode: "Markdown"});
             count++;
         } catch (e) {} 
     }
-    bot.sendMessage(chatId, `✅ Broadcast Pura Hua! ${count} logon ko message mil gaya.`);
+    bot.sendMessage(chatId, `✅ Broadcast Pura Hua! ${count} logon tak message gaya.`);
 });
 
 // ==========================================
-// 10. SMART SEARCH & AUTO-DELETE & F-SUB
+// 11. SMART SEARCH & ANTI-CRASH FALLBACK
 // ==========================================
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text ? msg.text.toLowerCase() : "";
 
-    // Agar message command (/) hai, toh ignore karo
     if (text.startsWith('/')) return;
 
-    // F-Sub Check
+    // F-Sub Check (Agar pass nahi hua toh rok dega)
     const isSubscribed = await checkFSub(chatId);
     if (!isSubscribed) {
         const fsubKeyboard = {
             inline_keyboard: [[{ text: "📢 Join Our Channel", url: CHANNEL_LINK }]]
         };
-        return bot.sendMessage(chatId, "❌ *Pehle humara channel join karo!*\n\nChannel join karne ke baad wapas aakar movie ka naam likho.", {parse_mode: "Markdown", reply_markup: fsubKeyboard});
+        return bot.sendMessage(chatId, "❌ *Pehle humara VIP channel join karo!*\n\nChannel join karne ke baad wapas aakar movie ka naam likho.", {parse_mode: "Markdown", reply_markup: fsubKeyboard});
     }
 
     try {
@@ -193,11 +207,8 @@ bot.on('message', async (msg) => {
         if (movies.length > 0) {
             for (let m of movies) {
                 const captionText = `🎬 *${m.name.toUpperCase()}*\n\n⚠️ *Yeh message 5 minute baad delete ho jayega!* Jaldi download karo.\n\n👇 Buttons par click karo:`;
-                const keyboard = {
-                    inline_keyboard: []
-                };
+                const keyboard = { inline_keyboard: [] };
 
-                // Agar link 'na' nahi hai, tabhi button dikhao
                 const row1 = [];
                 if (m.watch1 !== 'na') row1.push({ text: "▶️ Watch 1", url: m.watch1 });
                 if (m.watch2 !== 'na') row1.push({ text: "▶️ Watch 2", url: m.watch2 });
@@ -208,21 +219,27 @@ bot.on('message', async (msg) => {
                 if (m.dl2 !== 'na') row2.push({ text: "⬇️ Download 2", url: m.dl2 });
                 if (row2.length > 0) keyboard.inline_keyboard.push(row2);
 
-                const sentMsg = await bot.sendPhoto(chatId, m.image, { 
-                    caption: captionText, 
-                    parse_mode: "Markdown", 
-                    reply_markup: keyboard 
-                });
-
-                // 5 Minute (300000 ms) baad message delete karna
-                setTimeout(() => {
-                    bot.deleteMessage(chatId, sentMsg.message_id).catch(e => console.log("Delete error"));
-                }, 300000); 
+                try {
+                    // Try 1: Photo ke sath bhejna
+                    const sentMsg = await bot.sendPhoto(chatId, m.image, { 
+                        caption: captionText, 
+                        parse_mode: "Markdown", 
+                        reply_markup: keyboard 
+                    });
+                    setTimeout(() => { bot.deleteMessage(chatId, sentMsg.message_id).catch(e => {}); }, 300000); 
+                } catch (photoError) {
+                    // Try 2: Agar Image ka link kharab hai, toh crash nahi hoga, sirf Text bhejega!
+                    const sentMsg = await bot.sendMessage(chatId, captionText + "\n\n*(⚠️ Note: Is movie ka poster upload nahi ho paya)*", { 
+                        parse_mode: "Markdown", 
+                        reply_markup: keyboard 
+                    });
+                    setTimeout(() => { bot.deleteMessage(chatId, sentMsg.message_id).catch(e => {}); }, 300000); 
+                }
             }
         } else {
-            bot.sendMessage(chatId, "❌ Yeh movie abhi mere paas nahi hai.");
+            bot.sendMessage(chatId, "❌ Yeh movie abhi mere paas nahi hai. Spelling check karo!");
         }
     } catch (error) {
-        bot.sendMessage(chatId, "❌ Database error aa raha hai.");
+        bot.sendMessage(chatId, "❌ Asli System Error: " + error.message);
     }
 });
